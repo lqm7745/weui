@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:jee="http://www.springframework.org/schema/jee" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd    
+	    http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.1.xsd    
+	    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd    
+	    http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd    
+	    http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.1.xsd    
+	    http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-3.1.xsd    
+	    http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-3.1.xsd    
+	    http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd    
+	    http://www.springframework.org/schema/oxm http://www.springframework.org/schema/oxm/spring-oxm-3.1.xsd    
+	    http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd    
+	    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd    
+	    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd"> 
+		
+    <context:annotation-config />
+	<context:component-scan base-package="com.cc" />
+	<!-- 加载数据库配置文件 -->
+	<!-- 从properties文件获取配置信息 -->
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<!-- 标准配置 -->
+				<value>classpath:config.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	
+	<!-- 配置数据源 -->
+	
+	<!-- <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${bke.jdbc.driver}" />
+		<property name="jdbcUrl" value="${bke.jdbc.url_main}" />
+		<property name="user" value="${bke.jdbc.username_main}" />
+		<property name="password" value="${bke.jdbc.password_main}" />
+	</bean> -->
+	
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="maxActive" value="${jdbc.maxPoolSize}" />
+		<property name="initialSize" value="${jdbc.initialPoolSize}" />
+	</bean>
+
+	<!--mybatis与Spring整合 开始 sqlSessionFactory -->  
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- mybatis配置文件 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+	</bean>
+
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.cc.dao" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+    
+	<!-- 事务管理器的配置 -->
+	<!-- 对mybatis操作数据库的事务控制，spring使用jdbc的事务控制类,这个类来自spring-jdbc.jar -->
+	
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		 <property name="dataSource" ref="dataSource"/><!--  -->
+	</bean>
+	
+	<!-- 通知，也就是如果发现需要事务了通知谁transactionManager -->
+	<!-- isolation是事物的隔离级别，default是指才有数据库底层默认的隔离级别，oracle底层才有的是read_commited -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="start*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="save*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="upd*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="del*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="add*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="batch*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="insert*" isolation="DEFAULT" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="get*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="select*" propagation="SUPPORTS" read-only="true" />
+			<tx:method name="query*" propagation="SUPPORTS" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- aop事务切入点 -->
+	<aop:config>
+		<aop:advisor advice-ref="txAdvice" pointcut="execution(* com.cc.service.*.*(..))" />
+	</aop:config>
+	
+
+
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/WEB-INF/content/" />
+		<property name="suffix" value=".jsp"></property>
+	</bean>  
+	
+	
+	<!-- 文件上传 -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">  
+        <property name="defaultEncoding" value="utf-8"></property>   
+        <property name="maxUploadSize" value="10485760000"></property>  
+        <property name="maxInMemorySize" value="40960"></property>  
+   </bean>  
+	
+   <!-- 下载 -->
+   <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">  
+    <property name="messageConverters">  
+        <list>  
+            <!-- 把ByteArray加在Json前面 -->  
+            <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/>  
+            <bean id="jsonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" >  
+                <property name = "supportedMediaTypes">  
+                    <list>  
+                        <value>text/plain;charset=UTF-8</value>  
+                    </list>  
+                </property>  
+            </bean>  
+        </list>  
+    </property>  
+</bean>  
+</beans>

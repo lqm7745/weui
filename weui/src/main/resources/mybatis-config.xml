@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+    PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 别名 -->
+	<typeAliases>
+		<package name="com.cc.model"/>
+	</typeAliases>
+	<!-- <plugins>
+		<plugin interceptor="com.chinaums.exppay.common.mybatis.interceptor.page.DialectStatementHandlerInterceptor">
+			<property name="dialect" value="oracle"/>
+			<property name="debug" value="false"/>
+		</plugin>
+		<plugin interceptor="com.chinaums.exppay.common.mybatis.interceptor.page.DialectResultSetHandlerInterceptor"/>
+		<plugin interceptor="com.chinaums.exppay.common.mybatis.interceptor.page.UpdInfoSettingStatementInterceptor"/>
+	</plugins> -->
+	
+</configuration>
